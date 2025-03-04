@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>論證小教室</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        #chatBox {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 700px;
+            overflow-y: auto;
+            text-align: left;
+            margin-bottom: 10px;
+        }
+
+        .user-message {
+            color: blue;
+            margin: 5px 0;
+        }
+
+        .ai-message {
+            color: green;
+            margin: 5px 0;
+        }
+
+        #status {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* 按鈕樣式 */
+        .claimButton {
+            margin: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        /* 被選取後的按鈕樣式 */
+        .claimButton.selected {
+            background-color: yellow;
+            border: 2px solid #333;
+        }
+
+        /* 證據/推理等區塊的樣式，可自行微調 */
+        .stage-section {
+            border: 1px solid #888;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f9f9f9;
+        }
+
+        .large-textarea {
+            width: 100%;
+            height: 60px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>論證小教室</h1>
+    <!-- 狀態顯示 -->
+    <div id="status">當前學習階段：N/A</div>
+    <!-- 對話框 -->
+    <div id="chatBox">
+        <p class="ai-message">
+            <strong>AI:</strong> 很好！既然大家已經理解了「主張」、「證據」和「推理」，我們來做一個有趣的情境任務！
+        </p>
+        <p class="ai-message">
+            寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，他們說話時嘴巴前會呼出陣陣白煙。他們對這個現象有不同的看法：
+        </p>
+        <p class="ai-message">
+            小夫的主張：白煙是液態的小水滴。<br>
+            胖虎的主張：白煙是固態的冰晶。<br>
+            大雄的主張：白煙是氣態的水蒸氣。
+        </p>
+        <p class="ai-message">
+            我們來用 CER 論證 的方法來分析，看看你們的觀察、證據和推理是什麼。請思考一下，誰的主張是正確的？
+        </p>
+    </div>
+
+    <!-- 下方一般訊息輸入 -->
+    <input type="text" id="userInput" placeholder="輸入你的回答..." style="width:60%;" />
+    <!-- 選擇模型 -->
+    <select id="modelSelect">
+        <option value="chatgpt">ChatGPT</option>
+        <option value="ollama">Ollama</option>
+    </select>
+    <button id="sendBtn">送出</button>
+
+    <script type="module">
+        //=====================
+        // 全域變數 & 初始化
+        //=====================
+        let currentState = "claim_stage"; // 從後端拿到最新狀態後更新
+        let userId = sessionStorage.getItem("userId") || null;
+        if (!userId) {
+            userId = crypto.randomUUID();
+            sessionStorage.setItem("userId", userId);
+        }
+        console.log(userId);
+
+        const chatBox = document.getElementById("chatBox");
+        const statusEl = document.getElementById("status");
+        const userInputEl = document.getElementById("userInput");
+        const modelSelectEl = document.getElementById("modelSelect");
+        const sendBtn = document.getElementById("sendBtn");
+
+        //=====================
+        // 事件監聽
+        //=====================
+        sendBtn.addEventListener("click", () => {
+            const message = userInputEl.value.trim();
+            if (!message) return;
+            // 在畫面顯示使用者的訊息
+            appendUserMessage(message);
+            // 呼叫後端
+            sendMessageToServer({ message });
+            // 清空輸入
+            userInputEl.value = "";
+        });
+
+        //=====================
+        // 將訊息送至後端
+        //=====================
+        async function sendMessageToServer({
+            message = "",
+            currentClaim = "",
+            currentEvidence = ""
+        }) {
+            const model = modelSelectEl.value;
+
+            const res = await fetch("http://localhost:3001/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId,
+                    message,
+                    model,
+                    currentClaim,
+                    currentEvidence
+                })
+            });
+            const data = await res.json();
+            // 後端回傳：data.response, data.nextState, data.userClaim, data.userEvidence
+            // 把 AI 回應顯示到聊天室
+            appendAiMessage(data.response, model);
+            console.log(data);
+            // 更新頁面狀態
+            handleServerResponse(data);
+        }
+
+        //=====================
+        // 處理後端回應
+        //=====================
+        function handleServerResponse(data) {
+            // 更新當前 state
+            currentState = data.nextState;
+            // 在畫面上顯示
+            statusEl.innerText = `當前學習階段：${currentState}`;
+            // 根據階段顯示對應 UI
+            renderStageUI(currentState);
+        }
+
+        //=====================
+        // UI顯示：根據不同階段，顯示不同選項
+        //=====================
+        function renderStageUI(state) {
+            // 先移除舊的階段 UI（如主張按鈕、證據區塊...）以避免累積
+            removeStageElements();
+
+            switch (state) {
+                case "claim_stage":
+                    showClaimStageUI();
+                    break;
+                case "evidence_stage_ask_evidence":
+                    showEvidenceStageUI(false);
+                    break;
+                case "evidence_stage_ask_evidence_twice":
+                    showEvidenceStageUI(true);
+                    break;
+                // 你可依需求擴充更多階段
+                // case "reasoning_stage":
+                //   showReasoningStageUI();
+                //   break;
+                default:
+                    // 其他階段先不顯示額外UI
+                    break;
+            }
+        }
+
+        //=====================
+        // 主張階段 UI
+        //=====================
+        function showClaimStageUI() {
+            const stageDiv = document.createElement("div");
+            stageDiv.classList.add("stage-section");
+            stageDiv.id = "claimStage";
+
+            stageDiv.innerHTML = `
+        <p><strong>請選擇你的主張：</strong></p>
+        <button class="claimButton" id="btnClaim1">小夫：白煙是液態的小水滴</button>
+        <button class="claimButton" id="btnClaim2">胖虎：白煙是固態的冰晶</button>
+        <button class="claimButton" id="btnClaim3">大雄：白煙是氣態的水蒸氣</button>
+      `;
+
+            // 加到 chatBox 後面
+            chatBox.appendChild(stageDiv);
+
+            // 綁定事件
+            document.getElementById("btnClaim1").addEventListener("click", () => {
+                console.log("按鈕點擊事件觸發");
+                handleClaimSelection("白煙是液態的小水滴", "小夫");
+            });
+            document.getElementById("btnClaim2").addEventListener("click", () => {
+                handleClaimSelection("白煙是固態的冰晶", "胖虎");
+            });
+            document.getElementById("btnClaim3").addEventListener("click", () => {
+                handleClaimSelection("白煙是氣態的水蒸氣", "大雄");
+            });
+        }
+
+        //=====================
+        // 處理點擊「主張」的行為
+        //=====================
+        function handleClaimSelection(claimText, personName) {
+            // 顯示在聊天室 (使用者訊息)
+            appendUserMessage(`我覺得${personName}是對的！ (${claimText})`);
+            // 呼叫後端，帶上 currentClaim
+            sendMessageToServer({
+                message: `我覺得${personName}是對的！ (${claimText})`,
+                currentClaim: claimText
+            });
+        }
+
+        //=====================
+        // 證據階段 UI
+        //=====================
+        function showEvidenceStageUI(isTwice) {
+            // 先確保把舊的 stage 元素移除
+            const oldStage = document.getElementById("evidenceStage");
+            if (oldStage) oldStage.remove();
+            console.log(isTwice);
+            // 根據 isTwice 判斷按鈕文字
+            const noIdeaText = isTwice ? "我還是不知道..." : "我不知道可以提出什麼證據...";
+
+            const stageDiv = document.createElement("div");
+            stageDiv.classList.add("stage-section");
+            stageDiv.id = "evidenceStage";
+
+            stageDiv.innerHTML = `
+        <p><strong>請在下方輸入你想提出的證據：</strong></p>
+        <textarea id="evidenceInput" class="large-textarea" placeholder="寫下你的證據..."></textarea>
+        <br/>
+        <button id="btnSubmitEvidence">送出證據</button>
+        <button id="btnNoIdea">${noIdeaText}</button>
+      `;
+            chatBox.appendChild(stageDiv);
+
+            // 綁定事件
+            document.getElementById("btnSubmitEvidence").addEventListener("click", () => {
+                console.log('click evidence event')
+                const evidenceText = document.getElementById("evidenceInput").value.trim();
+                if (!evidenceText) {
+                    alert("請先輸入證據內容");
+                    return;
+                }
+                // 顯示在聊天室
+                appendUserMessage(`我想提出的證據是：${evidenceText}`);
+
+                // 送到後端
+                sendMessageToServer({
+                    message: evidenceText,
+                    currentEvidence: evidenceText
+                });
+            });
+
+            document.getElementById("btnNoIdea").addEventListener("click", () => {
+                appendUserMessage(noIdeaText);
+
+                sendMessageToServer({
+                    message: noIdeaText,
+                    currentEvidence: ""
+                });
+            });
+        }
+
+        //=====================
+        // 其他可擴充階段
+        //=====================
+        /*
+        function showReasoningStageUI() {
+          ... 
+        }
+        */
+
+        //=====================
+        // 工具函式：移除先前所有 stage 區塊
+        //=====================
+        function removeStageElements() {
+            const oldStages = chatBox.querySelectorAll(".stage-section");
+            oldStages.forEach(stage => stage.remove());
+        }
+
+        //=====================
+        // 工具函式：聊天室插入訊息
+        //=====================
+        function appendUserMessage(text) {
+            chatBox.innerHTML += `
+        <p class="user-message"><strong>你:</strong> ${text}</p>
+      `;
+            scrollChatBoxToBottom();
+        }
+        function appendAiMessage(text, model) {
+            chatBox.innerHTML += `
+        <p class="ai-message"><strong>AI (${model}):</strong> ${text}</p>
+      `;
+            scrollChatBoxToBottom();
+        }
+        function scrollChatBoxToBottom() {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        //=====================
+        // 初始化 - 讓前端跟後端同步狀態
+        //=====================
+        // 可依需求，若要一載入就從後端抓狀態，可加下列程式；否則就保留等使用者互動
+        // (此處示範一開始就呼叫，保證同步)
+        // sendMessageToServer({ message: "init" });
+        showClaimStageUI()
+    </script>
+</body>
+
+</html>
