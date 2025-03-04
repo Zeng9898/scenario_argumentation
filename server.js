@@ -55,6 +55,46 @@ let userState = {};
  */
 
 const prompts = {
+  guildRightClaimSystemPrompt:
+  `
+    Instruction:
+    1. 你是一位國小自然科學的教育專家，你的目標是專注在協助學生在"""
+    寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，他們說話時嘴巴前會呼出陣陣白煙。他們對這個現象有不同的看法：
+
+    小夫的主張：白煙是液態的小水滴。
+    胖虎的主張：白煙是固態的冰晶。
+    大雄的主張：白煙是氣態的水蒸氣。
+    """情境中，為「白煙是液態的小水滴」的主張建立證據，並一步步喚起所需的先備知識（例如「水的三態」和「三態與溫度的關係」）。
+    2. 每一次只執行一種 Action。
+    3. 回答須在 70 字以內。
+
+    Action:
+        - 喚起相關知識：詢問學生關於水的三態，並檢查他們對溫度與狀態轉變的理解，確定先備概念是否充足。
+        - 引導思考現象：透過問題引導學生解釋為何在 8 度時，呼出的水氣凝結成液態而產生白煙。
+        - 協助建立證據：鼓勵學生運用「水的三態」、「溫度影響狀態」等知識和生活經驗中發現的現象，提出白煙是小水滴的理由或觀察依據。
+        - 給予正向回饋並深化：當學生初步提出證據後，給予肯定，鼓勵進一步思考。
+        
+    Example:
+    ### 喚起相關知識（請勿包含這行說明文字）
+    - 學生回答：「我知道水有固體、液體和氣體三種狀態，但不確定溫度的影響」
+    - 預期輸出：
+    你提得很好！那能不能說說水氣在較低溫時會怎麼變化呢？
+
+    ### 引導思考現象（請勿包含這行說明文字）
+    - 學生回答：「可能是因為天氣冷，水氣變成白煙？」
+    - 預期輸出：
+    對！那你覺得 8 度時，這些水分子為什麼會變成看得見的白色霧狀呢？
+
+    ### 協助建立證據（請勿包含這行說明文字）
+    - 學生回答：「因為水氣遇冷凝結？」
+    - 預期輸出：
+    太好了！這就說明它是液態小水滴。你還需要更多證據或舉例嗎？
+
+    ### 給予正向回饋並深化（請勿包含這行說明文字）
+    - 學生回答：「我有點懂了，但還想多了解一些」
+    - 預期輸出：
+    很棒的提問！可以再想想水滴在空氣中的形態，或者要不要用其他實驗來證明？
+  `
 };
 
 // ------------------- 初始學習狀態 -------------------
@@ -147,7 +187,12 @@ app.post("/api/chat", async (req, res) => {
       if (message.includes("我還是不知道...")) {
         if (state.claim === "白煙是液態的小水滴") {
           state.learningState = "evidence_stage_guild_right_claim";
-          finalResponse = "沒問題！讓我們來看看如何證明這個主張是正確的。";
+          const assistantResponse = await generateResponse(
+            state.conversationHistory,
+            prompts.guildRightClaimSystemPrompt,
+            model
+          );
+          finalResponse = assistantResponse.trim();
         } else if (state.claim === "白煙是固態的冰晶" || state.claim === "白煙是氣態的水蒸氣") {
           state.learningState = "evidence_stage_guild_wrong_claim";
           finalResponse = "好，我們來檢視你的主張，看看是否需要修正。";
@@ -155,6 +200,15 @@ app.post("/api/chat", async (req, res) => {
           finalResponse = "請試著再想想你的主張與證據！";
         }
       }
+    }
+    else if (state.learningState === "evidence_stage_guild_right_claim") {
+      // 在這裡可以再進一步呼叫 generateResponse，引導學生繼續思考。
+      const assistantResponse = await generateResponse(
+        state.conversationHistory,
+        prompts.guildRightClaimSystemPrompt,
+        model
+      );
+      finalResponse = assistantResponse.trim();
     }
     
     
@@ -204,7 +258,7 @@ async function queryOpenAI(conversation, prompt) {
     });
     console.log("query LLM", prompt.slice(0, 100), conversation);
     const data = await response.json();
-    console.log("query reply:", data.choices[0].message.content , "learning state", learningState);
+    console.log("query reply:", data.choices[0].message.content);
     return data.choices[0].message.content;
   }
 
