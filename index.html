@@ -187,6 +187,10 @@
                 case "evidence_stage_ask_evidence_twice":
                     showEvidenceStageUI(true);
                     break;
+                // 🔸 新增 "reasoning_stage" 分支
+                case "reasoning_stage":
+                    showReasoningStageUI();
+                    break;
                 // 你可依需求擴充更多階段
                 // case "reasoning_stage":
                 //   showReasoningStageUI();
@@ -289,6 +293,59 @@
                 sendMessageToServer({
                     message: noIdeaText,
                     currentEvidence: ""
+                });
+            });
+        }
+
+        function showReasoningStageUI() {
+            // 先確保把舊的 reasoning 區塊移除，避免重複
+            const oldStage = document.getElementById("reasoningStage");
+            if (oldStage) oldStage.remove();
+
+            // 建立區塊
+            const stageDiv = document.createElement("div");
+            stageDiv.classList.add("stage-section");
+            stageDiv.id = "reasoningStage";
+
+            // 你可自行改動內文
+            stageDiv.innerHTML = `
+    <p><strong>請在下方輸入你的推理：</strong></p>
+    <textarea id="reasoningInput" class="large-textarea" placeholder="寫下你的推理..."></textarea>
+    <br/>
+    <button id="btnSubmitReasoning">送出推理</button>
+    <button id="btnNoIdeaReasoning">我不知道該如何推理...</button>
+  `;
+            chatBox.appendChild(stageDiv);
+
+            // 綁定事件
+            const reasoningInput = document.getElementById("reasoningInput");
+            const btnSubmitReasoning = document.getElementById("btnSubmitReasoning");
+            const btnNoIdeaReasoning = document.getElementById("btnNoIdeaReasoning");
+
+            // 「送出推理」按鈕
+            btnSubmitReasoning.addEventListener("click", () => {
+                const text = reasoningInput.value.trim();
+                if (!text) {
+                    alert("請先輸入推理內容");
+                    return;
+                }
+                // 顯示在聊天室
+                appendUserMessage(`我想提出的推理是：${text}`);
+
+                // 送到後端
+                sendMessageToServer({
+                    message: text,
+                    // 如果後端需要欄位來存推理，可考慮寫成 currentReasoning: text
+                    // 但若後端只接受 message，也行
+                });
+            });
+
+            // 「我不知道該如何推理」按鈕
+            btnNoIdeaReasoning.addEventListener("click", () => {
+                appendUserMessage("我不知道該如何推理...");
+
+                sendMessageToServer({
+                    message: "我不知道該如何推理..."
                 });
             });
         }

@@ -55,6 +55,51 @@ let userState = {};
  */
 
 const prompts = {
+  evaluateClaimSystemPrompt:
+  `
+  系統角色：  
+  你是一個只輸出「是」或「否」的API。你的任務是判斷以下對話中，學生是否已經從「白煙是固態冰晶」的想法，轉變並接受「白煙是液態小水滴」的觀點。只需生成「是」或「否」，不需要做任何進一步解釋或回饋。
+
+  請依照以下步驟進行：
+  1. 閱讀學生的對話與內容。
+  2. 檢查下列條件是否都成立：
+    (a) 學生是否已經不再堅持「白煙是冰晶」？
+    (b) 學生是否明確提到「白煙是液態小水滴」或承認與固態冰晶不同？
+  3. 若以上兩個條件都成立，判定為「是」；否則判定為「否」。
+  4. 請只輸出「是」或「否」作為最後回答。
+
+  **範例輸出格式（請勿包含這行說明文字）**：
+  是
+
+  ### 範例對話情境及預期輸出
+  #### 範例一
+  - 學生回答：  
+    「冰晶應該有固定形狀，但我發現白煙看起來不像冰啊，應該更接近水滴吧。」
+  - 預期輸出：  
+    是  
+  (因為學生已不再堅持冰晶，而且認同是水滴)
+
+  #### 範例二
+  - 學生回答：  
+    「雖然冰晶需要更低溫，但我覺得這些白煙看起來還是比較像固體啊！」
+  - 預期輸出：  
+    否  
+  (因為學生依然覺得是固體冰晶)
+
+  #### 範例三
+  - 學生回答：  
+    「好像真的不是冰晶，但我也不確定是什麼…」  
+  - 預期輸出：  
+    否  
+  (學生雖然放棄冰晶，但並沒有同意是水滴)
+
+  #### 範例四
+  - 學生回答：  
+    「我想通了！白煙其實是液態的小水滴，跟冰晶不太一樣。」  
+  - 預期輸出：  
+    是  
+  (同時符合「不再堅持冰晶」及「認為是水滴」)
+  `,
   evaluateUnderstandingSystemPrompt:
   `
   你是一位科學學習評估的助教。接下來，請根據以下【評分標準】評估學生對某科學現象（如：呼出氣體變成白煙）的理解程度。請務必嚴格參照本 Rubric 的各層級定義，對「理解概念」、「描述機制」和「舉例支撐」三個面向分別給出 0～2 分，並簡要說明你的評分依據。
@@ -92,7 +137,7 @@ const prompts = {
     "overall_advice": "…"
   }
   `,
-  guildClaimWithWrongClaimSystemPrompt:
+  guildClaimWithWrongClaimSystemPrompt: //可能可以分成「白煙是冰晶」或「白煙是氣態水蒸氣」的 prompt
   `
   Instruction:
     1. 你是一位國小自然科學的教育專家，請專注在協助學生意識到「白煙是冰晶」或「白煙是氣態水蒸氣」的主張是錯誤的，並逐步引導他們轉變為「白煙是液態的小水滴」的正確觀念。
@@ -171,6 +216,108 @@ const prompts = {
     - 學生回答：「我有點懂了，因為水在8度時會凝結成水滴，所以白煙是液態的小水滴」
     - 預期輸出：
     很棒喔！看來你現在已經可以提出證據了
+  `,
+  evaluateEvidenceSystemPrompt:`
+  系統角色：
+  你是一個只輸出「是」或「否」的API。你的任務是判斷在
+  """
+  寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，他們說話時嘴巴前會呼出陣陣白煙。他們對這個現象有不同的看法：
+
+  小夫的主張：白煙是液態的小水滴。
+  胖虎的主張：白煙是固態的冰晶。
+  大雄的主張：白煙是氣態的水蒸氣。
+  """
+  的情境中，學生的「證據」是否為正確的事實，且能夠支持他提出的主張。只需生成「是」或「否」，不需要做任何進一步解釋或回饋。
+
+  請依照以下步驟進行：
+  1. 閱讀學生的對話與內容。
+  2. 檢查下列條件是否都成立：
+    (a) 學生提出的「證據」是否是正確、符合科學或事實的資訊？
+    (b) 該證據能否合理支持學生所提出的主張？
+  3. 若以上兩個條件都成立，判定為「是」；否則判定為「否」。
+  4. 請只輸出「是」或「否」作為最後回答。
+
+  **範例輸出格式（請勿包含這行說明文字）**：
+  是
+
+  ### 範例對話情境及預期輸出
+  #### 範例一
+  - 學生的主張：  
+    「白煙是液態的小水滴。」
+  - 學生提出的證據：  
+    「因為水蒸氣凝結成小水滴後，就會形成可見的霧氣。」
+  - 預期輸出：  
+    是  
+  (證據正確描述了凝結過程，且可以支持主張)
+
+  #### 範例二
+  - 學生的主張：  
+    「白煙是固態的冰晶。」
+  - 學生提出的證據：  
+    「我覺得因為外面氣溫低到 8 度，就會直接形成結冰。」
+  - 預期輸出：  
+    否  
+  (雖然天氣冷，但 8 度並不足以使水汽直接形成冰晶；證據不夠正確，也無法支撐主張)
+
+  #### 範例三
+  - 學生的主張：  
+    「白煙是氣態的水蒸氣。」
+  - 學生提出的證據：  
+    「看起來是白色的煙，應該是蒸氣吧。」
+  - 預期輸出：  
+    否  
+  (「白煙」肉眼可見通常不是純水蒸氣；證據模糊且與正確事實不符，無法有力支持主張)
+
+  #### 範例四
+  - 學生的主張：  
+    「白煙其實是液態的小水滴。」
+  - 學生提出的證據：  
+    「用玻璃靠近嘴巴時，會有水珠凝結在表面，表示是液態。」
+  - 預期輸出：  
+    是  
+  (凝結成水珠的事實正確，且能明確支持「白煙是液態水滴」的主張)
+  `,
+  diagnoseEvidenceSystemPrompt:`
+  系統角色：
+  你是一個國小自然科學的教學專家 AI。你的任務是：閱讀學生在下列對話中提出的主張與證據，並判斷：
+  1. 證據是否為正確、符合科學或事實的資訊
+  2. 該證據能否合理支持學生提出的主張
+  3. 最後給學生一段 70 字以內的評估回應，不需進一步教學引導。
+
+  請依照以下步驟進行：
+  1. 閱讀並理解學生的主張與證據。
+  2. 依據上述兩點進行評估：
+    (a) 若證據與事實不符，或無法支持主張，請於回應中指出。
+    (b) 若證據正確且合理支撐主張，請於回應中肯定。
+  3. 產生一段不超過 70 字的回應即可，不需額外教學或引導。
+
+  **範例輸出格式（請勿包含這行說明文字）**：
+  <評估回應，不超過 70 字>
+
+  ### 範例對話情境及預期回應
+  #### 範例一
+  - 學生主張：
+    「白煙是液態的小水滴。」
+  - 學生證據：
+    「用冷玻璃靠近嘴巴時會凝結成水珠，所以它應該是液態。」
+  - 預期回應：
+    「不錯！你的觀察能說明白煙的確是水滴凝結，證據能支持你的主張。」
+
+  #### 範例二
+  - 學生主張：
+    「白煙是固態冰晶。」
+  - 學生證據：
+    「外面只有攝氏 8 度，就有可能直接結冰。」
+  - 預期回應：
+    「目前溫度尚不足以形成冰晶，且白煙看似不具固態形狀，證據無法支撐你的主張。」
+
+  #### 範例三
+  - 學生主張：
+    「白煙是氣態水蒸氣。」
+  - 學生證據：
+    「看到白色霧狀就一定是水蒸氣。」
+  - 預期回應：
+    「水蒸氣本身是透明的，白色霧狀其實是小水滴，故此證據不夠正確也無法支持主張。」  
   `
 };
 
@@ -225,13 +372,14 @@ app.post("/api/chat", async (req, res) => {
   if (typeof currentClaim === "string" && currentClaim.trim() !== "") {
     userState[userId].claim = currentClaim;
   }
-  if (typeof currentClaim === "string" && currentClaim.trim() !== "") {
+  if (typeof currentEvidence === "string" && currentEvidence.trim() !== "") {
     userState[userId].evidence = currentEvidence;
   }
 
   // 3. 取出此使用者的狀態資料
   const state = userState[userId];
   console.log('claim:', state.claim);
+  console.log('evidence:', state.evidence);
   // 4. 將使用者訊息加入對話歷史
   state.conversationHistory.push({ role: "user", content: message });
 
@@ -251,11 +399,46 @@ app.post("/api/chat", async (req, res) => {
     else if (state.learningState === "evidence_stage_ask_evidence") {
       if (message.includes("我不知道可以提出什麼證據...")) {
         state.learningState = "evidence_stage_ask_evidence_twice";
-        finalResponse = "沒關係！你要不要試著回想生活經驗，或是從課本學到的知識來找找看有沒有可以支持這個主張的證據？";
+        finalResponse = "沒關係！證據就是支持主張的資訊，可以是「生活經驗」、「科學原理」或是「課本中的內容」等等...。你要不要試著回想生活經驗，或是從課本學到的知識來找找看有沒有可以支持這個主張的證據？";
       } else if (currentEvidence) {
+        // 學生提供了證據，呼叫 evaluateEvidenceSystemPrompt 進行判斷
         state.evidence = currentEvidence;
-        finalResponse = `你提供的證據是：「${currentEvidence}」，我們來看看這個證據是否足夠支持你的主張。`;
-        state.learningState = "evaluate_evidence";
+        // 先將對話歷史 + 本次提示
+        const evaluateResponseRaw = await generateResponse(
+          [
+            {
+              role: "user",
+              content: `學生的主張：${state.claim}\n學生的證據：${state.evidence}`
+            }
+          ],
+          prompts.evaluateEvidenceSystemPrompt,
+          model
+        );
+
+        const evaluateResult = evaluateResponseRaw
+        .replace(/\s/g, "")   // 把所有空白字元(含換行)都去掉
+        .trim();
+
+        if (evaluateResult.startsWith("是")) {
+          // 證據有效，進入 reasoning_stage
+          state.learningState = "reasoning_stage";
+          finalResponse = `你提供的證據是：「${currentEvidence}」。看來它能有效支持「${state.claim}」，讓我們進一步思考推理吧！`;
+        } else {
+          // 證據無效，呼叫 DIAGNOSE_prompt
+          const diagnoseResponseRaw = await generateResponse(
+            [
+              {
+                role: "user",
+                content: `學生的主張：${state.claim}\n學生的證據：${state.evidence}`
+              }
+            ],
+            prompts.diagnoseEvidenceSystemPrompt,
+            model
+          );
+          finalResponse = diagnoseResponseRaw.trim();
+          // 可以考慮要不要改變 learningState
+          // state.learningState = "evidence_stage_remedial"; // 例如回到補救教學
+        }
       } else {
         finalResponse = "請試著提供一個證據來支持你的主張！";
       }
@@ -349,17 +532,39 @@ app.post("/api/chat", async (req, res) => {
       }
     }
     else if (state.learningState === "evidence_stage_guild_wrong_claim") {
-      // 進行同樣的引導
-      const assistantResponse = await generateResponse(
-        state.conversationHistory,
-        prompts.guildClaimWithWrongClaimSystemPrompt,
+      let mergedContent = state.conversationHistory
+      .map(item => `${item.role}:${item.content}`)
+      .join('\n');
+      // 建立新的陣列，只有一個物件，並將上面合併後的內容放到 content
+      const textToBeEval = [
+        {
+          role: 'user',
+          content: mergedContent
+        }
+      ]
+      const stanceResponseRaw = await generateResponse(
+        textToBeEval,
+        prompts.evaluateClaimSystemPrompt,
         model
       );
-      finalResponse = assistantResponse.trim();
+      const stanceResponse = stanceResponseRaw
+        .replace(/\s/g, "")   // 把所有空白字元(含換行)都去掉
+        .trim();
+      // 如果評估結果為「否」，再進行引導
+      if (stanceResponse.startsWith("否")) {
+        const assistantResponse = await generateResponse(
+          state.conversationHistory,
+          prompts.guildClaimWithWrongClaimSystemPrompt,
+          model
+        );
+        finalResponse = assistantResponse.trim();
+      } else {
+        // 學生已經改變想法
+        finalResponse = "太好了！你已經接受了白煙是液態的小水滴的概念。";
+        // 可以讓學習階段到下一步或重新設定
+        state.learningState = "claim_stage";
+      }
     }
-    
-    
-  
     // 記錄 AI 回應到對話歷史
     state.conversationHistory.push({ role: "assistant", content: finalResponse });
     console.log(state.conversationHistory);
