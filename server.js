@@ -425,6 +425,7 @@ app.post("/api/chat", async (req, res) => {
           finalResponse = `你提供的證據是：「${currentEvidence}」。看來它能有效支持「${state.claim}」，讓我們進一步思考推理吧！`;
         } else {
           // 證據無效，呼叫 DIAGNOSE_prompt
+          state.learningState = "evidence_stage_revise_evidence"
           const diagnoseResponseRaw = await generateResponse(
             [
               {

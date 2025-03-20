@@ -69,6 +69,9 @@
     <h1>論證小教室</h1>
     <!-- 狀態顯示 -->
     <div id="status">當前學習階段：N/A</div>
+    <p id="stageDescription" style="font-style: italic; color: #555;">
+        （此處會顯示該階段的詳細說明）
+    </p>
     <!-- 對話框 -->
     <div id="chatBox">
         <p class="ai-message">
@@ -97,6 +100,38 @@
     <button id="sendBtn">送出</button>
 
     <script type="module">
+        // (2) 建立階段中英文對照表
+        const stageInfoMap = {
+            "claim_stage": {
+                title: "提出主張階段",
+                description: "在此階段，你需要選擇並提出自己的主張或看法。"
+            },
+            "evidence_stage_ask_evidence": {
+                title: "提出證據階段",
+                description: "在此階段，請提出支持主張的證據。若不知道，可以點擊「我不知道可以提出什麼證據」。"
+            },
+            "evidence_stage_ask_evidence_twice": {
+                title: "提出證據階段 (再次)",
+                description: "你依舊猶豫要提出什麼證據，請再想想任何能支持主張的觀察或事實。"
+            },
+            "evidence_stage_guild_right_claim": {
+                title: "學生的主張正確，但提不出證據",
+                description: "幫助學生建立水的三態的知識，協助提出證據"
+            },
+            "evidence_stage_guild_wrong_claim": {
+                title: "學生提不出證據，且主張為錯誤的主張",
+                description: "協助學生意識到自己的立場有誤"
+            },
+            "evidence_stage_revise_evidence": {
+                title: "學生提出證據，但證據有誤",
+                description: ""
+            },
+            "reasoning_stage": {
+                title: "推理階段",
+                description: "在此階段，說明你的證據如何支援主張的觀點，並進行邏輯推理。"
+            }
+        };
+
         //=====================
         // 全域變數 & 初始化
         //=====================
@@ -164,8 +199,19 @@
         function handleServerResponse(data) {
             // 更新當前 state
             currentState = data.nextState;
-            // 在畫面上顯示
-            statusEl.innerText = `當前學習階段：${currentState}`;
+            const stageInfo = stageInfoMap[currentState] || {
+              title: currentState,
+              description: "（無對應的中文說明）"
+            };
+            // (4) 更新畫面
+            statusEl.innerText = `當前學習階段：${stageInfo.title}`;
+
+            // 如果有額外的階段說明區塊，寫入說明文字
+            const descEl = document.getElementById("stageDescription");
+            if (descEl) {
+              descEl.innerText = stageInfo.description;
+            }
+
             // 根據階段顯示對應 UI
             renderStageUI(currentState);
         }
@@ -324,17 +370,18 @@
 
             // 「送出推理」按鈕
             btnSubmitReasoning.addEventListener("click", () => {
-                const text = reasoningInput.value.trim();
-                if (!text) {
+                const reasoningText = reasoningInput.value.trim();
+                if (!reasoningText) {
                     alert("請先輸入推理內容");
                     return;
                 }
                 // 顯示在聊天室
-                appendUserMessage(`我想提出的推理是：${text}`);
+                appendUserMessage(`我想提出的推理是：${reasoningText}`);
 
                 // 送到後端
                 sendMessageToServer({
                     message: text,
+                    currentReasoning: reasoningText
                     // 如果後端需要欄位來存推理，可考慮寫成 currentReasoning: text
                     // 但若後端只接受 message，也行
                 });
