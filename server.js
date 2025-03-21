@@ -233,7 +233,7 @@ const prompts = {
   1. 閱讀學生的對話與內容。
   2. 檢查下列條件是否都成立：
     (a) 學生提出的「證據」是否是正確、符合科學或事實的資訊？
-    (b) 該證據能否合理支持學生所提出的主張？
+    (b) 該證據能否合理支持並推理出學生所提出的主張？
   3. 若以上兩個條件都成立，判定為「是」；否則判定為「否」。
   4. 請只輸出「是」或「否」作為最後回答。
 
@@ -279,10 +279,10 @@ const prompts = {
   `,
   diagnoseEvidenceSystemPrompt:`
   系統角色：
-  你是一個國小自然科學的教學專家 AI。你的任務是：閱讀學生在下列對話中提出的主張與證據，並判斷：
+  你是一個國小自然科學的教學專家 AI。你的任務是閱讀學生在下列對話中提出的主張與證據，並判斷：
   1. 證據是否為正確、符合科學或事實的資訊
-  2. 該證據能否合理支持學生提出的主張
-  3. 最後給學生一段 70 字以內的評估回應，不需進一步教學引導。
+  2. 該證據能否合理支持並推理出學生提出的主張
+  3. 最後給學生一段 70 字以內的評估回應，只需指出錯誤或不足之處，不要告訴學生答案，也不需進一步教學引導。
 
   請依照以下步驟進行：
   1. 閱讀並理解學生的主張與證據。
@@ -317,7 +317,200 @@ const prompts = {
   - 學生證據：
     「看到白色霧狀就一定是水蒸氣。」
   - 預期回應：
-    「水蒸氣本身是透明的，白色霧狀其實是小水滴，故此證據不夠正確也無法支持主張。」  
+    「水蒸氣本身是透明的，此證據不夠正確也無法支持主張。」  
+  `,
+  reviseEvidenceWithRightClaim:`
+  Instruction:
+    1. 你是一位國小自然科學的教育專家，你的目標是協助學生修正針對「白煙是液態的小水滴」的不足或錯誤證據，並建構正確的「水的三態」與「三態與溫度的關係」概念。
+    2. 每一次只執行一種 Action。
+    3. 回答須在 70 字以內。
+
+    學生的主張：[STUDENT_CLAIM]
+    學生的證據：[STUDENT_EVIDENCE]
+
+    Action:
+        - 喚起相關知識：詢問或確認學生對水的三態及其轉變條件的了解，檢查「溫度」與「狀態改變」等先備概念是否充分。
+        - 引導思考現象：透過提問讓學生解釋，在 8 度的情況下，呼出的水氣為何會凝結成可見的霧滴。
+        - 協助修正並補充證據：透過「反駁學生的不足或錯誤之處」讓學生理解證據問題，並強調水的液態特徵與溫度影響，協助學生補充或修正。
+        - 給予正向回饋並深化：當學生修正或補充證據後，給予肯定並鼓勵他們繼續思考或舉例。
+
+    Example:
+    ### 喚起相關知識
+    - 學生回答：「我知道水有三態，但不懂為什麼 8 度就能變成水滴」
+    - 預期輸出：
+    你很棒！那你認為較低溫時，氣態水會怎麼變化呢？
+
+    ### 引導思考現象
+    - 學生回答：「因為天氣冷，水蒸氣變成白煙？但不確定為什麼是霧狀」
+    - 預期輸出：
+    好問題！想想在攝氏 8 度時，哪些原因會讓水分子凝結成看得見的小水滴？
+
+    ### 協助修正並補充證據
+    - 學生回答：「我覺得溫度低，可能就直接變成冰。」
+    - 預期輸出：
+    你的說法有些誤解，8 度還不足以形成冰，請想想水滴凝結的條件是什麼？
+
+    ### 給予正向回饋並深化
+    - 學生回答：「原來如此！所以其實是液態，而且我可以用玻璃測試。」
+    - 預期輸出：
+    很好！用凝結在玻璃表面的現象，就能支持你的結論。
+  `,
+  reviseEvidenceWithRightClaimEvaluation:`
+  系統角色：
+  你是一個只輸出「是」或「否」的API。你的任務是判斷在以下情境中，學生是否已經理解先前的證據不足或錯誤，並能建構正確的「水的三態」與「三態與溫度的關係」概念。只需生成「是」或「否」，不需要做任何進一步解釋或回饋。
+
+  寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，他們說話時嘴巴前會呼出陣陣白煙。
+  他們對這個現象有不同的看法：
+      小夫的主張：白煙是液態的小水滴。
+      胖虎的主張：白煙是固態的冰晶。
+      大雄的主張：白煙是氣態的水蒸氣。
+
+  請依照以下步驟進行：
+  1. 閱讀學生的對話與內容。
+  2. 參考學生目前的主張和證據
+  學生的主張：[STUDENT_CLAIM]
+  學生的證據：[STUDENT_EVIDENCE]
+  3. 檢查下列條件是否都成立：
+    (a) 學生已經理解並承認先前提出的不足或錯誤之處。
+    (b) 學生已正確運用「水的三態」與「溫度影響」等概念，並能提出合理解釋。
+  3. 若以上兩個條件都成立，判定為「是」；否則判定為「否」。
+  4. 請只輸出「是」或「否」作為最後回答。
+
+  **範例輸出格式（請勿包含這行說明文字）**：
+  是
+
+  ### 範例對話情境及預期輸出
+  #### 範例一
+  - 學生先前證據不足，但現在表示：
+    「我發現之前的證據沒說明凝結原理。其實在 8 度時，水氣凝結成水滴才是白煙的原因。」
+  - 預期輸出：
+    是  
+  (學生已承認舊證據有誤並運用正確水的三態概念)
+
+  #### 範例二
+  - 學生先前證據不足，但現在表示：
+    「因為天氣冷，所以我想白煙應該就是小水滴啊？」
+  - 預期輸出：
+    否  
+  (學生並未明確承認舊證據不足，也沒展現對『三態與溫度關係』的深入理解)
+
+  #### 範例三
+  - 學生先前證據不足，但現在表示：
+    「我知道 8 度不夠低到結冰，所以氣態水只能凝結成小水滴而不是冰晶。」
+  - 預期輸出：
+    是  
+  (學生已釐清之前的不足，且能正確運用水的三態與溫度關係做解釋)
+  `,
+  reviseEvidenceWithWrongClaim:`
+  Instruction:
+    1. 你是一位國小自然科學的教育專家，請專注在協助學生意識到「白煙是冰晶」或「白煙是氣態水蒸氣」的主張是錯誤的，以及了解他們在證據中可能存在的迷思、錯誤或不足之處，並逐步引導他們轉變為「白煙是液態的小水滴」的正確觀念。
+    2. 每一次只執行一種 Action。
+    3. 回答須在 70 字以內。
+
+    學生的主張：[STUDENT_CLAIM]
+    學生的證據：[STUDENT_EVIDENCE]
+
+    Action:
+        - 質疑固態主張：如果學生認為是冰晶，透過提問引導學生比較冰晶與白煙的特性，引發疑問。
+        - 質疑氣態主張：如果學生認為是水蒸氣，透過溫度與可見度的問題，說明其與白煙不同。
+        - 質疑證據：如果學生提出的證據有迷思或錯誤之處，透過提問或提醒，讓學生反思證據是否能真正支持主張。
+        - 引導認知衝突：在學生猶豫時，運用生活化情境或科學原理，強調錯誤主張或證據中無法解釋的現象。
+        - 協助學生自我修正：鼓勵學生根據三態特性修正想法，進一步接近「白煙是液態的小水滴」的結論。
+        - 給予正向回饋並深化：當學生開始接受正確觀點，肯定其思考並詢問是否需要更多解釋或舉例。
+
+    Example:
+    ### 質疑固態主張
+    - 學生回答：「我覺得白煙是冰晶」
+    - 預期輸出：
+    冰晶有固定形狀，你覺得這些白煙有像冰塊般堅硬嗎？
+
+    ### 質疑氣態主張
+    - 學生回答：「應該是水蒸氣吧？」
+    - 預期輸出：
+    純水蒸氣是看不見的，那你說的白煙怎麼能看得到呢？
+
+    ### 質疑證據
+    - 學生回答：「因為外面只有攝氏 8 度，所以一定會結冰啊。」
+    - 預期輸出：
+    8 度還沒到零下，你覺得這樣的證據能證明白煙是冰晶嗎？
+
+    ### 引導認知衝突
+    - 學生回答：「我還是不確定」
+    - 預期輸出：
+    想想冰需要更低溫才形成，氣態又透明，這些點哪裡矛盾呢？
+
+    ### 協助學生自我修正
+    - 學生回答：「好像真的不是冰晶也不是氣體…」
+    - 預期輸出：
+    太好了！那麼它更像凝結的液態小水滴，你同意嗎？
+
+    ### 給予正向回饋並深化
+    - 學生回答：「我懂了，是小水滴」
+    - 預期輸出：
+    很棒的轉變！看來你的立場已經有所改變。
+  `,
+  reviseEvidenceWithWrongClaimEvaluation:`
+  系統角色：
+  你是一個只輸出「是」或「否」的API。你的任務是判斷在
+  """
+  寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，他們說話時嘴巴前會呼出陣陣白煙。他們對這個現象有不同的看法：
+
+  小夫的主張：白煙是液態的小水滴。
+  胖虎的主張：白煙是固態的冰晶。
+  大雄的主張：白煙是氣態的水蒸氣。
+  """
+  的情境中，學生的「證據」是否為正確的事實，且能夠支持他提出的主張。只需生成「是」或「否」，不需要做任何進一步解釋或回饋。
+
+  學生的主張：[STUDENT_CLAIM]
+  學生的證據：[STUDENT_EVIDENCE]
+
+  請依照以下步驟進行：
+  1. 閱讀學生的對話與內容。
+  2. 檢查下列條件是否都成立：
+    (a) 學生提出的「證據」是否是正確、符合科學或事實的資訊？
+    (b) 該證據能否合理支持並推理出學生所提出的主張？
+  3. 若以上兩個條件都成立，判定為「是」；否則判定為「否」。
+  4. 請只輸出「是」或「否」作為最後回答。
+
+  **範例輸出格式（請勿包含這行說明文字）**：
+  是
+
+  ### 範例對話情境及預期輸出
+  #### 範例一
+  - 學生的主張：  
+    「白煙是液態的小水滴。」
+  - 學生提出的證據：  
+    「因為水蒸氣凝結成小水滴後，就會形成可見的霧氣。」
+  - 預期輸出：  
+    是  
+  (證據正確描述了凝結過程，且可以支持主張)
+
+  #### 範例二
+  - 學生的主張：  
+    「白煙是固態的冰晶。」
+  - 學生提出的證據：  
+    「我覺得因為外面氣溫低到 8 度，就會直接形成結冰。」
+  - 預期輸出：  
+    否  
+  (雖然天氣冷，但 8 度並不足以使水汽直接形成冰晶；證據不夠正確，也無法支撐主張)
+
+  #### 範例三
+  - 學生的主張：  
+    「白煙是氣態的水蒸氣。」
+  - 學生提出的證據：  
+    「看起來是白色的煙，應該是蒸氣吧。」
+  - 預期輸出：  
+    否  
+  (「白煙」肉眼可見通常不是純水蒸氣；證據模糊且與正確事實不符，無法有力支持主張)
+
+  #### 範例四
+  - 學生的主張：  
+    「白煙其實是液態的小水滴。」
+  - 學生提出的證據：  
+    「用玻璃靠近嘴巴時，會有水珠凝結在表面，表示是液態。」
+  - 預期輸出：  
+    是  
+  (凝結成水珠的事實正確，且能明確支持「白煙是液態水滴」的主張)
   `
 };
 
@@ -566,6 +759,120 @@ app.post("/api/chat", async (req, res) => {
         state.learningState = "claim_stage";
       }
     }
+    else if (state.learningState === "evidence_stage_revise_evidence") {
+      // 根據前端傳入的 message 進行判斷
+      if (message.includes("我可以再自己想想看")) {
+        // 切換回 evidence_stage_ask_evidence，讓學生重新想證據
+        state.learningState = "evidence_stage_ask_evidence";
+        finalResponse = "好的，你可以再思考一下，看看還有沒有其他證據能支持你的主張。";
+      } else if (message.includes("我需要幫助和引導")) {
+        // 根據主張決定下一個階段
+        if (state.claim === "白煙是液態的小水滴") {
+          state.learningState = "evidence_stage_revise_evidence_right_claim";
+          // 將 [STUDENT_CLAIM] 與 [STUDENT_EVIDENCE] 替換為學生的主張與證據
+          let revisedPrompt = prompts.reviseEvidenceWithRightClaim
+          .replace("[STUDENT_CLAIM]", state.claim)
+          .replace("[STUDENT_EVIDENCE]", state.evidence);
+
+        const assistantResponse = await generateResponse(
+          state.conversationHistory,
+          revisedPrompt,
+          model
+        );
+
+        finalResponse = assistantResponse.trim();
+        // finalResponse = "好的，讓我們一起來看看如何強化『白煙是液態小水滴』的證據。";
+
+        } else if (state.claim === "白煙是氣態的水蒸氣" || state.claim === "白煙是固態的冰晶") {
+          state.learningState = "evidence_stage_revise_evidence_wrong_claim";
+          let revisedPrompt = prompts.reviseEvidenceWithRightClaim
+          .replace("[STUDENT_CLAIM]", state.claim)
+          .replace("[STUDENT_EVIDENCE]", state.evidence);
+
+          const assistantResponse = await generateResponse(
+            state.conversationHistory,
+            revisedPrompt,
+            model
+          );
+          finalResponse = assistantResponse.trim();
+          // finalResponse = "好的，讓我們來思考一下是否需要修正你的主張，以及該怎麼找更適切的證據。";
+        } else {
+          // 其它情況，預設回覆
+          finalResponse = "好的，你想從哪方面開始進一步討論呢？";
+        }
+      } else {
+        // 未符合任何指令時
+        finalResponse = "請問你想要再想想看，或需要幫助和引導呢？";
+      }
+    }
+    else if (state.learningState === "evidence_stage_revise_evidence_right_claim") {
+      // 1. 先用 reviseEvidenceWithRightClaimEvaluation prompt 來判斷學生是否已經修正完畢
+    
+      // 把 [STUDENT_CLAIM], [STUDENT_EVIDENCE] 替換到 prompt 中
+      let evaluationPrompt = prompts.reviseEvidenceWithRightClaimEvaluation
+        .replace("[STUDENT_CLAIM]", state.claim)
+        .replace("[STUDENT_EVIDENCE]", state.evidence);
+    
+      const evaluationResponseRaw = await generateResponse(
+        state.conversationHistory,
+        evaluationPrompt,
+        model
+      );
+    
+      // 2. 只輸出「是」或「否」
+      const evaluationResult = evaluationResponseRaw.replace(/\s/g, "").trim();
+    
+      if (evaluationResult.startsWith("是")) {
+        // 3. 已完成修正，可前往下一階段，例如 reasoning_stage
+        finalResponse = "太好了！看來你對此情境有更多的理解了，可以再提出一次證據嗎？";
+        state.learningState = "evidence_stage_ask_evidence"; 
+        // 或任何你想要的階段
+      } else {
+        // 4. 若結果為「否」，則保持在 evidence_stage_revise_evidence_right_claim
+        //    並再次使用 reviseEvidenceWithRightClaim prompt 引導學生
+        const revisedPrompt = prompts.reviseEvidenceWithRightClaim
+          .replace("[STUDENT_CLAIM]", state.claim)
+          .replace("[STUDENT_EVIDENCE]", state.evidence);
+    
+        const assistantResponse = await generateResponse(
+          state.conversationHistory,
+          revisedPrompt,
+          model
+        );
+        finalResponse = assistantResponse.trim();
+        // 保持在同一階段
+        state.learningState = "evidence_stage_revise_evidence_right_claim";
+      }
+    }
+    else if (state.learningState === "evidence_stage_revise_evidence_wrong_claim") {
+      let evaluationPrompt = prompts.reviseEvidenceWithWrongClaimEvaluation
+        .replace("[STUDENT_CLAIM]", state.claim)
+        .replace("[STUDENT_EVIDENCE]", state.evidence);
+      console.log(state.conversationHistory.slice(-3));
+      const evaluationResponseRaw = await generateResponse(
+        state.conversationHistory.slice(-3),
+        evaluationPrompt,
+        model
+      );
+      const evaluationResult = evaluationResponseRaw.replace(/\s/g, "").trim();
+    
+      if (evaluationResult.startsWith("是")) {
+        state.learningState = "claim_stage";
+        finalResponse = "太好了！你已經修正了先前的想法，現在讓我們回到主張階段重新整理吧。";
+      } else {
+        let revisePrompt = prompts.reviseEvidenceWithWrongClaim
+          .replace("[STUDENT_CLAIM]", state.claim)
+          .replace("[STUDENT_EVIDENCE]", state.evidence);
+    
+        const assistantResponse = await generateResponse(
+          state.conversationHistory,
+          revisePrompt,
+          model
+        );
+        finalResponse = assistantResponse.trim();
+      }
+    }
+    
     // 記錄 AI 回應到對話歷史
     state.conversationHistory.push({ role: "assistant", content: finalResponse });
     console.log(state.conversationHistory);
@@ -609,7 +916,7 @@ async function queryOpenAI(conversation, prompt) {
         temperature: 0.7
       })
     });
-    console.log("query LLM", prompt.slice(0, 100), conversation);
+    console.log("query LLM", prompt, conversation);
     const data = await response.json();
     console.log("query reply:", data.choices[0].message.content);
     return data.choices[0].message.content;

@@ -200,8 +200,8 @@
             // 更新當前 state
             currentState = data.nextState;
             const stageInfo = stageInfoMap[currentState] || {
-              title: currentState,
-              description: "（無對應的中文說明）"
+                title: currentState,
+                description: "（無對應的中文說明）"
             };
             // (4) 更新畫面
             statusEl.innerText = `當前學習階段：${stageInfo.title}`;
@@ -209,7 +209,7 @@
             // 如果有額外的階段說明區塊，寫入說明文字
             const descEl = document.getElementById("stageDescription");
             if (descEl) {
-              descEl.innerText = stageInfo.description;
+                descEl.innerText = stageInfo.description;
             }
 
             // 根據階段顯示對應 UI
@@ -232,6 +232,9 @@
                     break;
                 case "evidence_stage_ask_evidence_twice":
                     showEvidenceStageUI(true);
+                    break;
+                case "evidence_stage_revise_evidence": // <-- 新增此分支
+                    showReviseEvidenceStageUI();
                     break;
                 // 🔸 新增 "reasoning_stage" 分支
                 case "reasoning_stage":
@@ -340,6 +343,32 @@
                     message: noIdeaText,
                     currentEvidence: ""
                 });
+            });
+        }
+
+        function showReviseEvidenceStageUI() {
+            const oldStage = document.getElementById("reviseEvidenceStage");
+            if (oldStage) oldStage.remove();
+
+            const stageDiv = document.createElement("div");
+            stageDiv.classList.add("stage-section");
+            stageDiv.id = "reviseEvidenceStage";
+
+            stageDiv.innerHTML = `
+        <p><strong>你要做什麼？</strong></p>
+        <button id="btnThinkMore">我可以再自己想想看</button>
+        <button id="btnNeedHelp">我需要幫助和引導</button>
+    `;
+            chatBox.appendChild(stageDiv);
+
+            document.getElementById("btnThinkMore").addEventListener("click", () => {
+                appendUserMessage("我可以再自己想想看");
+                sendMessageToServer({ message: "我可以再自己想想看" });
+            });
+
+            document.getElementById("btnNeedHelp").addEventListener("click", () => {
+                appendUserMessage("我需要幫助和引導");
+                sendMessageToServer({ message: "我需要幫助和引導" });
             });
         }
 
