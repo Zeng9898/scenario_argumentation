@@ -56,7 +56,7 @@ let userState = {};
 
 const prompts = {
   evaluateClaimSystemPrompt:
-  `
+    `
   系統角色：  
   你是一個只輸出「是」或「否」的API。你的任務是判斷以下對話中，學生是否已經從「白煙是固態冰晶」的想法，轉變並接受「白煙是液態小水滴」的觀點。只需生成「是」或「否」，不需要做任何進一步解釋或回饋。
 
@@ -101,7 +101,7 @@ const prompts = {
   (同時符合「不再堅持冰晶」及「認為是水滴」)
   `,
   evaluateUnderstandingSystemPrompt:
-  `
+    `
   你是一位科學學習評估的助教。接下來，請根據以下【評分標準】評估學生對某科學現象（如：呼出氣體變成白煙）的理解程度。請務必嚴格參照本 Rubric 的各層級定義，對「理解概念」、「描述機制」和「舉例支撐」三個面向分別給出 0～2 分，並簡要說明你的評分依據。
 
   評分標準：
@@ -138,7 +138,7 @@ const prompts = {
   }
   `,
   guildClaimWithWrongClaimSystemPrompt: //可能可以分成「白煙是冰晶」或「白煙是氣態水蒸氣」的 prompt
-  `
+    `
   Instruction:
     1. 你是一位國小自然科學的教育專家，請專注在協助學生意識到「白煙是冰晶」或「白煙是氣態水蒸氣」的主張是錯誤的，並逐步引導他們轉變為「白煙是液態的小水滴」的正確觀念。
     2. 每一次只執行一種 Action。
@@ -178,7 +178,7 @@ const prompts = {
     很棒的轉變！看來你的立場已經有所改變。
   `,
   guildEvidenceWithRightClaimSystemPrompt:
-  `
+    `
     Instruction:
     1. 你是一位國小自然科學的教育專家，你的目標是專注在協助學生在"""
     寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，他們說話時嘴巴前會呼出陣陣白煙。他們對這個現象有不同的看法：
@@ -217,7 +217,7 @@ const prompts = {
     - 預期輸出：
     很棒喔！看來你現在已經可以提出證據了
   `,
-  evaluateEvidenceSystemPrompt:`
+  evaluateEvidenceSystemPrompt: `
   系統角色：
   你是一個只輸出「是」或「否」的API。你的任務是判斷在
   """
@@ -277,7 +277,7 @@ const prompts = {
     是  
   (凝結成水珠的事實正確，且能明確支持「白煙是液態水滴」的主張)
   `,
-  diagnoseEvidenceSystemPrompt:`
+  diagnoseEvidenceSystemPrompt: `
   系統角色：
   你是一個國小自然科學的教學專家 AI。你的任務是閱讀學生在下列對話中提出的主張與證據，並判斷：
   1. 證據是否為正確、符合科學或事實的資訊
@@ -319,11 +319,12 @@ const prompts = {
   - 預期回應：
     「水蒸氣本身是透明的，此證據不夠正確也無法支持主張。」  
   `,
-  reviseEvidenceWithRightClaim:`
+  reviseEvidenceWithRightClaim: `
   Instruction:
     1. 你是一位國小自然科學的教育專家，你的目標是協助學生修正針對「白煙是液態的小水滴」的不足或錯誤證據，並建構正確的「水的三態」與「三態與溫度的關係」概念。
     2. 每一次只執行一種 Action。
-    3. 回答須在 70 字以內。
+    3. 每次回答結束時，主動詢問學生是否理解（例如：「這樣可以嗎？」）。
+    4. 回答須在 70 字以內。
 
     學生的主張：[STUDENT_CLAIM]
     學生的證據：[STUDENT_EVIDENCE]
@@ -338,24 +339,25 @@ const prompts = {
     ### 喚起相關知識
     - 學生回答：「我知道水有三態，但不懂為什麼 8 度就能變成水滴」
     - 預期輸出：
-    你很棒！那你認為較低溫時，氣態水會怎麼變化呢？
+    你很棒！那你認為較低溫時，氣態水會怎麼變化呢？你理解嗎？
 
     ### 引導思考現象
     - 學生回答：「因為天氣冷，水蒸氣變成白煙？但不確定為什麼是霧狀」
     - 預期輸出：
-    好問題！想想在攝氏 8 度時，哪些原因會讓水分子凝結成看得見的小水滴？
+    好問題！想想在攝氏 8 度時，哪些原因會讓水分子凝結成小水滴？清楚嗎？
 
     ### 協助修正並補充證據
     - 學生回答：「我覺得溫度低，可能就直接變成冰。」
     - 預期輸出：
-    你的說法有些誤解，8 度還不足以形成冰，請想想水滴凝結的條件是什麼？
+    你的說法有些誤解，8 度不足以結冰，請想想水滴凝結條件。可以接受嗎？
 
     ### 給予正向回饋並深化
     - 學生回答：「原來如此！所以其實是液態，而且我可以用玻璃測試。」
     - 預期輸出：
-    很好！用凝結在玻璃表面的現象，就能支持你的結論。
+    很好！用凝結在玻璃表面的現象，就能支持你的結論。你明白了嗎？
+
   `,
-  reviseEvidenceWithRightClaimEvaluation:`
+  reviseEvidenceWithRightClaimEvaluation: `
   系統角色：
   你是一個只輸出「是」或「否」的API。你的任務是判斷在以下情境中，學生是否已經理解先前的證據不足或錯誤，並能建構正確的「水的三態」與「三態與溫度的關係」概念。只需生成「是」或「否」，不需要做任何進一步解釋或回饋。
 
@@ -401,7 +403,7 @@ const prompts = {
     是  
   (學生已釐清之前的不足，且能正確運用水的三態與溫度關係做解釋)
   `,
-  reviseEvidenceWithWrongClaim:`
+  reviseEvidenceWithWrongClaim: `
   Instruction:
     1. 你是一位國小自然科學的教育專家，請專注在協助學生意識到「白煙是冰晶」或「白煙是氣態水蒸氣」的主張是錯誤的，以及了解他們在證據中可能存在的迷思、錯誤或不足之處，並逐步引導他們轉變為「白煙是液態的小水滴」的正確觀念。
     2. 每一次只執行一種 Action。
@@ -449,7 +451,7 @@ const prompts = {
     - 預期輸出：
     很棒的轉變！看來你的立場已經有所改變。
   `,
-  reviseEvidenceWithWrongClaimEvaluation:`
+  reviseEvidenceWithWrongClaimEvaluation: `
   系統角色：
   你是一個只輸出「是」或「否」的API。你的任務是判斷在
   """
@@ -511,7 +513,73 @@ const prompts = {
   - 預期輸出：  
     是  
   (凝結成水珠的事實正確，且能明確支持「白煙是液態水滴」的主張)
+  `,
+  evaluateReasoningSystemPrompt:
+    `
+  系統角色：
+  你是一個只輸出「是」或「否」的API。你的任務是根據下列評分原則，判斷學生在
+  """
+  寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，他們說話時嘴巴前會呼出陣陣白煙。
+  他們對這個現象有不同的看法：
+      小夫的主張：白煙是液態的小水滴。
+      胖虎的主張：白煙是固態的冰晶。
+      大雄的主張：白煙是氣態的水蒸氣。
+  """
+  的情境中，所提出的推理（reasoning）是否能連結科學主張與證據。只需生成「是」或「否」，不需要做任何進一步解釋或回饋。
+
+  參考評分原則 (Rubric):
+  - Level 1 (0 point): 沒有具體論述，或論述無法連結主張與證據（推理不足）。
+  - Level 2 (1 point): 提出適切的推理，能連結科學主張與證據，且描述具體、清晰、不含糊。
+
+  請依照以下步驟進行：
+  1. 閱讀學生的主張與證據。
+  2. 檢查下列條件是否都成立：
+     (a) 學生提出的推理內容是否正確或符合科學（對三態變化、凝結等現象有正確理解）。
+     (b) 推理是否能有效連結學生的主張與證據，且描述足夠明確。
+  3. 若以上兩個條件都符合 Level 2 的標準，判定為「是」；否則判定為「否」。
+  4. 請只輸出「是」或「否」作為最後回答。
+
+  **範例輸出格式（請勿包含此行文字）**：
+  是
+
+  ### 範例對話情境及預期輸出
+  #### 範例一
+  - 學生的主張：  
+    「白煙是液態的小水滴。」
+  - 學生的證據：  
+    「因為水蒸氣凝結成小水滴後，就會形成可見的霧氣。」
+  - 預期輸出：  
+    是  
+  (推理能清楚連結主張與證據，且符合科學原理)
+
+  #### 範例二
+  - 學生的主張：  
+    「白煙是固態的冰晶。」
+  - 學生的證據：  
+    「外面只有 8 度就能直接結冰，所以白煙也是冰晶。」
+  - 預期輸出：  
+    否  
+  (未正確連結事實與結論，溫度解釋不足，推理不符合科學)
+
+  #### 範例三
+  - 學生的主張：  
+    「白煙是氣態水蒸氣。」
+  - 學生的證據：  
+    「看到白色的煙就等於蒸氣。」
+  - 預期輸出：
+    否  
+  (敘述含糊，無法連結「白色霧狀」與「氣態看不見」的矛盾，推理不足)
+
+  #### 範例四
+  - 學生的主張：  
+    「白煙是液態的小水滴。」
+  - 學生的證據：  
+    「呼出的溫暖水氣在較低溫度下凝結成看得見的霧滴。」
+  - 預期輸出：  
+    是  
+  (推理充分，描述明確，能合理解釋白煙現象)
   `
+
 };
 
 // ------------------- 初始學習狀態 -------------------
@@ -526,15 +594,15 @@ function initUserIfNeeded(userId) {
           content: `
             很好！既然大家已經理解了「主張」、「證據」和「推理」，我們來做一個有趣的情境任務！
 
-            寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，
-            他們說話時嘴巴前會呼出陣陣白煙。他們對這個現象有不同的看法：
-    
-            小夫的主張：白煙是液態的小水滴。
-            胖虎的主張：白煙是固態的冰晶。
-            大雄的主張：白煙是氣態的水蒸氣。
-    
-            我們來用 CER 論證的方法來分析，看看你們的觀察、證據和推理是什麼。
-            請思考一下，誰的主張是正確的？
+  寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，
+  他們說話時嘴巴前會呼出陣陣白煙。他們對這個現象有不同的看法：
+
+  小夫的主張：白煙是液態的小水滴。
+  胖虎的主張：白煙是固態的冰晶。
+  大雄的主張：白煙是氣態的水蒸氣。
+
+  我們來用 CER 論證的方法來分析，看看你們的觀察、證據和推理是什麼。
+  請思考一下，誰的主張是正確的？
           `
         }
       ],
@@ -556,11 +624,11 @@ app.post("/api/chat", async (req, res) => {
    * - model: 選擇用 chatgpt 或 ollama
    * - currentClaim/currentEvidence: 若使用者在前端填寫了某些主張或證據，可一併帶上
    */
-  const { userId, message, model, currentClaim, currentEvidence } = req.body;
+  const { userId, message, model, currentClaim, currentEvidence, currentReasoning } = req.body;
   console.log(message);
   // 1. 初始化使用者（若尚未建立）
   initUserIfNeeded(userId);
-  
+
   // 2. 更新自訂欄位（若前端傳了新的值）
   if (typeof currentClaim === "string" && currentClaim.trim() !== "") {
     userState[userId].claim = currentClaim;
@@ -568,11 +636,14 @@ app.post("/api/chat", async (req, res) => {
   if (typeof currentEvidence === "string" && currentEvidence.trim() !== "") {
     userState[userId].evidence = currentEvidence;
   }
-
+  if (typeof currentReasoning === "string" && currentReasoning.trim() !== "") {
+    userState[userId].reasoning = currentReasoning;
+  }
   // 3. 取出此使用者的狀態資料
   const state = userState[userId];
   console.log('claim:', state.claim);
   console.log('evidence:', state.evidence);
+  console.log('reasoning:', state.reasoning);
   // 4. 將使用者訊息加入對話歷史
   state.conversationHistory.push({ role: "user", content: message });
 
@@ -588,7 +659,7 @@ app.post("/api/chat", async (req, res) => {
       } else {
         finalResponse = "請選擇你的主張，我們才能進一步討論喔！";
       }
-    } 
+    }
     else if (state.learningState === "evidence_stage_ask_evidence") {
       if (message.includes("我不知道可以提出什麼證據...")) {
         state.learningState = "evidence_stage_ask_evidence_twice";
@@ -601,7 +672,7 @@ app.post("/api/chat", async (req, res) => {
           [
             {
               role: "user",
-              content: `學生的主張：${state.claim}\n學生的證據：${state.evidence}`
+              content: `學生的主張：${state.claim} \n學生的證據：${state.evidence} `
             }
           ],
           prompts.evaluateEvidenceSystemPrompt,
@@ -609,12 +680,12 @@ app.post("/api/chat", async (req, res) => {
         );
 
         const evaluateResult = evaluateResponseRaw
-        .replace(/\s/g, "")   // 把所有空白字元(含換行)都去掉
-        .trim();
+          .replace(/\s/g, "")   // 把所有空白字元(含換行)都去掉
+          .trim();
 
         if (evaluateResult.startsWith("是")) {
           // 證據有效，進入 reasoning_stage
-          state.learningState = "reasoning_stage";
+          state.learningState = "reasoning_stage_ask_reasoning";
           finalResponse = `你提供的證據是：「${currentEvidence}」。看來它能有效支持「${state.claim}」，讓我們進一步思考推理吧！`;
         } else {
           // 證據無效，呼叫 DIAGNOSE_prompt
@@ -623,7 +694,7 @@ app.post("/api/chat", async (req, res) => {
             [
               {
                 role: "user",
-                content: `學生的主張：${state.claim}\n學生的證據：${state.evidence}`
+                content: `學生的主張：${state.claim} \n學生的證據：${state.evidence} `
               }
             ],
             prompts.diagnoseEvidenceSystemPrompt,
@@ -663,11 +734,11 @@ app.post("/api/chat", async (req, res) => {
         }
       }
     }
-    else if (state.learningState === "evidence_stage_guild_right_claim") {   
+    else if (state.learningState === "evidence_stage_guild_right_claim") {
       // 將每個對話的 role:content 合併成一個字串，以換行符號分隔
       let mergedContent = state.conversationHistory
-      .map(item => `${item.role}:${item.content}`)
-      .join('\n');
+        .map(item => `${item.role}:${item.content} `)
+        .join('\n');
       // 建立新的陣列，只有一個物件，並將上面合併後的內容放到 content
       const textToBeEval = [
         {
@@ -689,15 +760,15 @@ app.post("/api/chat", async (req, res) => {
       try {
         // 使用正則表達式提取 {} 內的 JSON 內容
         const match = rubricResponse.match(/\{[\s\S]*\}/);
-        
+
         if (match) {
           const jsonString = match[0]; // 擷取 {} 內的 JSON 內容
           const parsed = JSON.parse(jsonString); // 解析 JSON
-      
+
           // 計算總分
-          const totalScore = (parsed.score_concept || 0) + 
-                             (parsed.score_mechanism || 0) + 
-                             (parsed.score_example || 0);
+          const totalScore = (parsed.score_concept || 0) +
+            (parsed.score_mechanism || 0) +
+            (parsed.score_example || 0);
           // 如果分數 < 2，就需要額外教學
           if (totalScore < 2) {
             needGuild = true;
@@ -720,15 +791,15 @@ app.post("/api/chat", async (req, res) => {
         const guildResponse = guildResponseRaw.trim();
         finalResponse = guildResponse;
       } else {
-        finalResponse = `看來你對「水的三態和變化」有更深的理解了，再次針對${state.claim}提出證據看看吧`; // 如果不用額外教學，就只回傳 JSON
+        finalResponse = `看來你對「水的三態和變化」有更深的理解了，再次針對${state.claim} 提出證據看看吧`; // 如果不用額外教學，就只回傳 JSON
 
         state.learningState = "evidence_stage_ask_evidence";
       }
     }
     else if (state.learningState === "evidence_stage_guild_wrong_claim") {
       let mergedContent = state.conversationHistory
-      .map(item => `${item.role}:${item.content}`)
-      .join('\n');
+        .map(item => `${item.role}:${item.content} `)
+        .join('\n');
       // 建立新的陣列，只有一個物件，並將上面合併後的內容放到 content
       const textToBeEval = [
         {
@@ -771,23 +842,23 @@ app.post("/api/chat", async (req, res) => {
           state.learningState = "evidence_stage_revise_evidence_right_claim";
           // 將 [STUDENT_CLAIM] 與 [STUDENT_EVIDENCE] 替換為學生的主張與證據
           let revisedPrompt = prompts.reviseEvidenceWithRightClaim
-          .replace("[STUDENT_CLAIM]", state.claim)
-          .replace("[STUDENT_EVIDENCE]", state.evidence);
+            .replace("[STUDENT_CLAIM]", state.claim)
+            .replace("[STUDENT_EVIDENCE]", state.evidence);
 
-        const assistantResponse = await generateResponse(
-          state.conversationHistory,
-          revisedPrompt,
-          model
-        );
+          const assistantResponse = await generateResponse(
+            state.conversationHistory,
+            revisedPrompt,
+            model
+          );
 
-        finalResponse = assistantResponse.trim();
-        // finalResponse = "好的，讓我們一起來看看如何強化『白煙是液態小水滴』的證據。";
+          finalResponse = assistantResponse.trim();
+          // finalResponse = "好的，讓我們一起來看看如何強化『白煙是液態小水滴』的證據。";
 
         } else if (state.claim === "白煙是氣態的水蒸氣" || state.claim === "白煙是固態的冰晶") {
           state.learningState = "evidence_stage_revise_evidence_wrong_claim";
           let revisedPrompt = prompts.reviseEvidenceWithRightClaim
-          .replace("[STUDENT_CLAIM]", state.claim)
-          .replace("[STUDENT_EVIDENCE]", state.evidence);
+            .replace("[STUDENT_CLAIM]", state.claim)
+            .replace("[STUDENT_EVIDENCE]", state.evidence);
 
           const assistantResponse = await generateResponse(
             state.conversationHistory,
@@ -807,25 +878,25 @@ app.post("/api/chat", async (req, res) => {
     }
     else if (state.learningState === "evidence_stage_revise_evidence_right_claim") {
       // 1. 先用 reviseEvidenceWithRightClaimEvaluation prompt 來判斷學生是否已經修正完畢
-    
+
       // 把 [STUDENT_CLAIM], [STUDENT_EVIDENCE] 替換到 prompt 中
       let evaluationPrompt = prompts.reviseEvidenceWithRightClaimEvaluation
         .replace("[STUDENT_CLAIM]", state.claim)
         .replace("[STUDENT_EVIDENCE]", state.evidence);
-    
+
       const evaluationResponseRaw = await generateResponse(
         state.conversationHistory,
         evaluationPrompt,
         model
       );
-    
+
       // 2. 只輸出「是」或「否」
       const evaluationResult = evaluationResponseRaw.replace(/\s/g, "").trim();
-    
+
       if (evaluationResult.startsWith("是")) {
         // 3. 已完成修正，可前往下一階段，例如 reasoning_stage
         finalResponse = "太好了！看來你對此情境有更多的理解了，可以再提出一次證據嗎？";
-        state.learningState = "evidence_stage_ask_evidence"; 
+        state.learningState = "evidence_stage_ask_evidence";
         // 或任何你想要的階段
       } else {
         // 4. 若結果為「否」，則保持在 evidence_stage_revise_evidence_right_claim
@@ -833,7 +904,7 @@ app.post("/api/chat", async (req, res) => {
         const revisedPrompt = prompts.reviseEvidenceWithRightClaim
           .replace("[STUDENT_CLAIM]", state.claim)
           .replace("[STUDENT_EVIDENCE]", state.evidence);
-    
+
         const assistantResponse = await generateResponse(
           state.conversationHistory,
           revisedPrompt,
@@ -855,7 +926,7 @@ app.post("/api/chat", async (req, res) => {
         model
       );
       const evaluationResult = evaluationResponseRaw.replace(/\s/g, "").trim();
-    
+
       if (evaluationResult.startsWith("是")) {
         state.learningState = "claim_stage";
         finalResponse = "太好了！你已經修正了先前的想法，現在讓我們回到主張階段重新整理吧。";
@@ -863,7 +934,7 @@ app.post("/api/chat", async (req, res) => {
         let revisePrompt = prompts.reviseEvidenceWithWrongClaim
           .replace("[STUDENT_CLAIM]", state.claim)
           .replace("[STUDENT_EVIDENCE]", state.evidence);
-    
+
         const assistantResponse = await generateResponse(
           state.conversationHistory,
           revisePrompt,
@@ -872,18 +943,55 @@ app.post("/api/chat", async (req, res) => {
         finalResponse = assistantResponse.trim();
       }
     }
-    
+    else if (state.learningState === "reasoning_stage_ask_reasoning") {
+      if (message.includes("我不知道可以提出什麼推理...")) {
+        state.learningState = "reasoning_stage_ask_reasoning_twice";
+        finalResponse = "沒關係，推理就是搭起證據和主張之間的橋樑，說明證據如何支持主張，要再試試看嗎？";
+      } else if (currentReasoning && currentReasoning.trim() !== "") {
+        // 學生提供了推理，呼叫 evaluateReasoningSystemPrompt 進行判斷
+        const evaluateReasoningRaw = await generateResponse(
+          [
+            {
+              role: "user",
+              content: `
+                學生的主張：${state.claim}
+                學生的證據：${state.evidence}
+                學生的推理：${state.reasoning}
+              `
+            }
+          ],
+          prompts.evaluateReasoningSystemPrompt,
+          model
+        );
+
+        const evaluateResult = evaluateReasoningRaw.replace(/\s/g, "").trim();
+        if (evaluateResult.startsWith("是")) {
+          // 推理有效
+          // 你可以在這裡設定下一個學習階段
+          state.learningState = "completed"; // 範例
+          finalResponse = `你的推理是：「${currentReasoning}」，看來能合理連結主張與證據！`;
+        } else {
+          // 推理無效
+          // 這裡可以考慮下一個階段 (如: 提供補充或重新思考)
+          state.learningState = "reasoning_stage_ask_reasoning_twice";
+          finalResponse = "你的推理似乎還不夠完整，能再想想如何連結主張和證據嗎？";
+        }
+      } else {
+        finalResponse = "請嘗試提供一個推理，說明你的證據如何支持主張。";
+      }
+    }
+
     // 記錄 AI 回應到對話歷史
     state.conversationHistory.push({ role: "assistant", content: finalResponse });
     console.log(state.conversationHistory);
-    // 回傳給前端
+    // 回傳給前端f
     res.json({
       response: finalResponse,
       nextState: state.learningState,
       userClaim: state.claim,
       userEvidence: state.evidence
     });
-  
+
   } catch (error) {
     console.error("Error during AI process:", error);
     res.status(500).json({ error: "Something went wrong." });
@@ -892,53 +1000,53 @@ app.post("/api/chat", async (req, res) => {
 
 // 封裝：根據對話和 prompt 呼叫對應的模型
 async function generateResponse(conversation, prompt, model) {
-    if (model === "chatgpt") {
-      return queryOpenAI(conversation, prompt);
-    } else {
-      return queryOllama(conversation, prompt);
-    }
+  if (model === "chatgpt") {
+    return queryOpenAI(conversation, prompt);
+  } else {
+    return queryOllama(conversation, prompt);
   }
-  
+}
+
 // ------------------- 呼叫 OpenAI API -------------------
 async function queryOpenAI(conversation, prompt) {
-    const response = await fetch(openAiApiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openAiApiKey}`
-      },
-      body: JSON.stringify({
-        model: openAiModel,
-        messages: [
-          { role: "system", content: prompt },
-          ...conversation
-        ],
-        temperature: 0.7
-      })
-    });
-    console.log("query LLM", prompt, conversation);
-    const data = await response.json();
-    console.log("query reply:", data.choices[0].message.content);
-    return data.choices[0].message.content;
-  }
+  const response = await fetch(openAiApiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openAiApiKey} `
+    },
+    body: JSON.stringify({
+      model: openAiModel,
+      messages: [
+        { role: "system", content: prompt },
+        ...conversation
+      ],
+      temperature: 0.7
+    })
+  });
+  console.log("query LLM", prompt, conversation);
+  const data = await response.json();
+  console.log("query reply:", data.choices[0].message.content);
+  return data.choices[0].message.content;
+}
 
 // 呼叫 Ollama API
 async function queryOllama() {
-    const formattedPrompt = conversationHistory.map(msg => 
-        `${msg.role === "system" ? "System" : msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
-    ).join("\n") + "\nAssistant:";
+  const formattedPrompt = conversationHistory.map(msg =>
+    `${msg.role === "system" ? "System" : msg.role === "user" ? "User" : "Assistant"}: ${msg.content} `
+  ).join("\n") + "\nAssistant:";
 
-    const response = await fetch(ollamaApiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: ollamaModel, prompt: formattedPrompt, stream: false })
-    });
+  const response = await fetch(ollamaApiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: ollamaModel, prompt: formattedPrompt, stream: false })
+  });
 
-    const data = await response.json();
-    return data.response;
+  const data = await response.json();
+  return data.response;
 }
 
 // 啟動伺服器
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

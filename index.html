@@ -126,21 +126,24 @@
                 title: "學生提出證據，但證據有誤",
                 description: ""
             },
-            "reasoning_stage": {
-                title: "推理階段",
+            "reasoning_stage_ask_reasoning": {
+                title: "詢問推理階段",
                 description: "在此階段，說明你的證據如何支援主張的觀點，並進行邏輯推理。"
-            }
+            },
+            "reasoning_stage_ask_reasoning_twice": {
+                title: "詢問推理階段 (再次)",
+                description: "提示學生推理的定義，並請學生再次思考推理"
+            },
         };
 
         //=====================
         // 全域變數 & 初始化
         //=====================
         let currentState = "claim_stage"; // 從後端拿到最新狀態後更新
-        let userId = sessionStorage.getItem("userId") || null;
-        if (!userId) {
-            userId = crypto.randomUUID();
-            sessionStorage.setItem("userId", userId);
-        }
+        let userId = crypto.randomUUID(); // Always create a new userId
+        console.log(userId);
+        // (You can still store if needed, but it won't preserve after refresh)
+        sessionStorage.setItem("userId", userId);
         console.log(userId);
 
         const chatBox = document.getElementById("chatBox");
@@ -169,7 +172,8 @@
         async function sendMessageToServer({
             message = "",
             currentClaim = "",
-            currentEvidence = ""
+            currentEvidence = "",
+            currentReasoning = ""
         }) {
             const model = modelSelectEl.value;
 
@@ -181,7 +185,8 @@
                     message,
                     model,
                     currentClaim,
-                    currentEvidence
+                    currentEvidence,
+                    currentReasoning
                 })
             });
             const data = await res.json();
@@ -237,8 +242,11 @@
                     showReviseEvidenceStageUI();
                     break;
                 // 🔸 新增 "reasoning_stage" 分支
-                case "reasoning_stage":
-                    showReasoningStageUI();
+                case "reasoning_stage_ask_reasoning":
+                    showReasoningStageUI(false);
+                    break;
+                case "reasoning_stage_ask_reasoning_twice":
+                    showReasoningStageUI(true);
                     break;
                 // 你可依需求擴充更多階段
                 // case "reasoning_stage":
@@ -372,68 +380,52 @@
             });
         }
 
-        function showReasoningStageUI() {
-            // 先確保把舊的 reasoning 區塊移除，避免重複
+        //=====================
+        // 推理階段 UI
+        //=====================
+
+        function showReasoningStageUI(isTwice) {
             const oldStage = document.getElementById("reasoningStage");
             if (oldStage) oldStage.remove();
 
-            // 建立區塊
+            const noIdeaText = isTwice ? "我還是不知道..." : "我不知道可以提出什麼推理...";
+
             const stageDiv = document.createElement("div");
             stageDiv.classList.add("stage-section");
             stageDiv.id = "reasoningStage";
-
-            // 你可自行改動內文
             stageDiv.innerHTML = `
-    <p><strong>請在下方輸入你的推理：</strong></p>
-    <textarea id="reasoningInput" class="large-textarea" placeholder="寫下你的推理..."></textarea>
-    <br/>
-    <button id="btnSubmitReasoning">送出推理</button>
-    <button id="btnNoIdeaReasoning">我不知道該如何推理...</button>
-  `;
+            <p><strong>請在下方輸入你的推理：</strong></p>
+            <textarea id="reasoningInput" class="large-textarea" placeholder="寫下你的推理..."></textarea>
+            <br/>
+            <button id="btnSubmitReasoning">送出推理</button>
+            <button id="btnNoIdeaReasoning">${noIdeaText}</button>
+        `;
             chatBox.appendChild(stageDiv);
 
-            // 綁定事件
             const reasoningInput = document.getElementById("reasoningInput");
             const btnSubmitReasoning = document.getElementById("btnSubmitReasoning");
             const btnNoIdeaReasoning = document.getElementById("btnNoIdeaReasoning");
 
-            // 「送出推理」按鈕
             btnSubmitReasoning.addEventListener("click", () => {
                 const reasoningText = reasoningInput.value.trim();
                 if (!reasoningText) {
                     alert("請先輸入推理內容");
                     return;
                 }
-                // 顯示在聊天室
                 appendUserMessage(`我想提出的推理是：${reasoningText}`);
-
-                // 送到後端
                 sendMessageToServer({
-                    message: text,
+                    message: reasoningText,
                     currentReasoning: reasoningText
-                    // 如果後端需要欄位來存推理，可考慮寫成 currentReasoning: text
-                    // 但若後端只接受 message，也行
                 });
             });
 
-            // 「我不知道該如何推理」按鈕
             btnNoIdeaReasoning.addEventListener("click", () => {
-                appendUserMessage("我不知道該如何推理...");
-
+                appendUserMessage(noIdeaText);
                 sendMessageToServer({
-                    message: "我不知道該如何推理..."
+                    message: noIdeaText
                 });
             });
         }
-
-        //=====================
-        // 其他可擴充階段
-        //=====================
-        /*
-        function showReasoningStageUI() {
-          ... 
-        }
-        */
 
         //=====================
         // 工具函式：移除先前所有 stage 區塊
