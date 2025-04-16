@@ -279,17 +279,14 @@ const prompts = {
   `,
   diagnoseEvidenceSystemPrompt: `
   系統角色：
-  你是一個國小自然科學的教學專家 AI。你的任務是閱讀學生在下列對話中提出的主張與證據，並判斷：
-  1. 證據是否為正確、符合科學或事實的資訊
-  2. 該證據能否合理支持並推理出學生提出的主張
-  3. 最後給學生一段 70 字以內的評估回應，只需指出錯誤或不足之處，不要告訴學生答案，也不需進一步教學引導。
+  你是一個國小自然科學的教學專家 AI。你的任務是閱讀學生在下列對話中提出的主張與證據，並給學生一段 70 字以內的評估回應，只需指出錯誤或不足之處，不要告訴學生答案或提示，也不需進一步教學引導。
 
   請依照以下步驟進行：
   1. 閱讀並理解學生的主張與證據。
-  2. 依據上述兩點進行評估：
+  2. 依據以下兩點進行評估：
     (a) 若證據與事實不符，或無法支持主張，請於回應中指出。
     (b) 若證據正確且合理支撐主張，請於回應中肯定。
-  3. 產生一段不超過 70 字的回應即可，不需額外教學或引導。
+  3. 產生一段不超過 70 字的回應即可，不需額外教學、提示或引導。
 
   **範例輸出格式（請勿包含這行說明文字）**：
   <評估回應，不超過 70 字>
@@ -309,7 +306,7 @@ const prompts = {
   - 學生證據：
     「外面只有攝氏 8 度，就有可能直接結冰。」
   - 預期回應：
-    「目前溫度尚不足以形成冰晶，且白煙看似不具固態形狀，證據無法支撐你的主張。」
+    「目前溫度尚不足以形成冰晶，證據無法支撐你的主張。」
 
   #### 範例三
   - 學生主張：
@@ -578,8 +575,10 @@ const prompts = {
   - 預期輸出：  
     是  
   (推理充分，描述明確，能合理解釋白煙現象)
+  `,
+  guideReasoningSystemPrompt: `
+  你是一位國小科學老師。學生說「我還是不知道如何提出推理」，請簡短引導他們如何運用證據與主張連結。回答不超過 70 字。
   `
-
 };
 
 // ------------------- 初始學習狀態 -------------------
@@ -946,9 +945,10 @@ app.post("/api/chat", async (req, res) => {
     else if (state.learningState === "reasoning_stage_ask_reasoning") {
       if (message.includes("我不知道可以提出什麼推理...")) {
         state.learningState = "reasoning_stage_ask_reasoning_twice";
-        finalResponse = "沒關係，推理就是搭起證據和主張之間的橋樑，說明證據如何支持主張，要再試試看嗎？";
+        finalResponse = "沒關係，推理就是搭起證據和主張之間的橋樑，說明證據如何支持主張。你可以試著回想一下，證據是如何幫助你得出這個主張的？";
       } else if (currentReasoning && currentReasoning.trim() !== "") {
         // 學生提供了推理，呼叫 evaluateReasoningSystemPrompt 進行判斷
+        state.reasoning = currentReasoning;
         const evaluateReasoningRaw = await generateResponse(
           [
             {
@@ -967,17 +967,36 @@ app.post("/api/chat", async (req, res) => {
         const evaluateResult = evaluateReasoningRaw.replace(/\s/g, "").trim();
         if (evaluateResult.startsWith("是")) {
           // 推理有效
-          // 你可以在這裡設定下一個學習階段
-          state.learningState = "completed"; // 範例
+          state.learningState = "completed"; // 或下一個階段
           finalResponse = `你的推理是：「${currentReasoning}」，看來能合理連結主張與證據！`;
         } else {
-          // 推理無效
-          // 這裡可以考慮下一個階段 (如: 提供補充或重新思考)
+          // 推理無效，進入補充階段
           state.learningState = "reasoning_stage_ask_reasoning_twice";
           finalResponse = "你的推理似乎還不夠完整，能再想想如何連結主張和證據嗎？";
         }
       } else {
         finalResponse = "請嘗試提供一個推理，說明你的證據如何支持主張。";
+      }
+    } else if (state.learningState === "reasoning_stage_ask_reasoning_twice") {
+      if (!state.reasoningGuidanceCount) {
+        state.reasoningGuidanceCount = 0; // 初始化引導次數計數器
+      }
+
+      state.reasoningGuidanceCount++;
+
+      if (state.reasoningGuidanceCount > 3) {
+        // 如果引導次數超過三次，重新進入 reasoning_stage
+        state.learningState = "reasoning_stage_ask_reasoning";
+        state.reasoningGuidanceCount = 0; // 重置計數器
+        finalResponse = "我們重新來思考推理的部分，試著說明證據如何支持主張吧！";
+      } else {
+        // 繼續引導
+        const assistantResponse = await generateResponse(
+          state.conversationHistory,
+          prompts.guideReasoningSystemPrompt,
+          model
+        );
+        finalResponse = assistantResponse.trim();
       }
     }
 
