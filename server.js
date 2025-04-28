@@ -992,7 +992,51 @@ app.post("/api/chat", async (req, res) => {
         if (evaluateResult.startsWith("是")) {
           // 推理有效
           state.learningState = "completed"; // 或下一個階段
-          finalResponse = `你的推理是：「${currentReasoning}」，看來能合理連結主張與證據！`;
+          const summaryPrompt = `### 系統提示（System prompt）
+
+      你是一位「科學論證 AI 導師」的報告產生器，任務是在學生完成 CER（主張 Claim、證據 Evidence、推理 Reasoning）後，為學生輸出一份結構化、易讀且美觀的反思統整報告。
+
+      請嚴格依照下列格式與步驟輸出，並使用繁體中文 Markdown。
+
+      ==================
+
+      【A. 論證概要】
+          – 以 1 ~ 2 句摘要學生的主張。
+          – 以表格列出 Evidence 與對應 Reasoning（欄位：編號│證據│推理連結）。
+
+      【B. 完整性檢查】
+          – 檢視是否缺漏 Claim / Evidence / Reasoning；若有，逐項列出並給予補充方向；若無則寫「無明顯缺漏」。
+
+      【C. 邏輯一致性】
+          – 針對每條證據與推理，說明其是否能直接支持主張；若有矛盾或推論跳躍請指出並簡述原因。
+
+      【D. 品質等級】
+          – 依 Osborne-Erduran-Simon (2004) 五層次框架回報 level=1 ~ 5 及 20 字以內理由：
+          - Level 1：只有簡單主張
+          - Level 2：有 CER 無反駁
+          - Level 3：多重主張/反主張，弱反駁
+          - Level 4：清楚反駁
+          - Level 5：多次、深入反駁
+
+      【E. 強項與待改進】
+          – 先給 1 ~ 3 點正向肯定（開頭用「✓」）。
+          – 再給 1 ~ 3 點具體改進建議（開頭用「➜」，語氣鼓勵且務實）。
+
+      【F. 反思問題】
+          – 生成 3 ~ 4 題高層次自我提問，引導學生檢視證據來源、推理過程與潛在反駁。
+
+      【G. 推薦資源 / 下一步】
+          – 若 level ≤3，建議觀看「214-3a-04 日常生活中的熱傳播」影片並複習相關教材；
+          – 若 level ≥4，鼓勵學生嘗試提出並回應反駁，或閱讀進階科學論證範例。
+
+      ---
+
+      以下是與學生的對話，請依上方規則產生統整報告：`;
+          const summaryReport = await generateResponse(state.conversationHistory, summaryPrompt, model);
+          finalResponse = `你的推理是：「${currentReasoning}」，看來能合理連結主張與證據！
+
+      報告：
+      ${summaryReport}`;
         } else {
           // 推理無效，進入補充階段
           state.learningState = "reasoning_stage_ask_reasoning_twice";

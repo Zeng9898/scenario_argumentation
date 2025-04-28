@@ -63,6 +63,7 @@
             height: 60px;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
 <body>
@@ -90,14 +91,16 @@
         </p>
     </div>
 
-    <!-- 下方一般訊息輸入 -->
-    <input type="text" id="userInput" placeholder="輸入你的回答..." style="width:60%;" />
-    <!-- 選擇模型 -->
-    <select id="modelSelect">
-        <option value="chatgpt">ChatGPT</option>
-        <option value="ollama">Ollama</option>
-    </select>
-    <button id="sendBtn">送出</button>
+    <!-- 下方一般訊息輸入區塊 -->
+    <div id="userInputArea">
+        <input type="text" id="userInput" placeholder="輸入你的回答..." style="width:60%;" />
+        <select id="modelSelect">
+            <option value="chatgpt">ChatGPT</option>
+            <option value="ollama">Ollama</option>
+        </select>
+        <button id="sendBtn">送出</button>
+    </div>
+
 
     <script type="module">
         // (2) 建立階段中英文對照表
@@ -139,8 +142,16 @@
         //=====================
         // 全域變數 & 初始化
         //=====================
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         let currentState = "claim_stage"; // 從後端拿到最新狀態後更新
-        let userId = crypto.randomUUID(); // Always create a new userId
+        let userId = generateUUID();
         console.log(userId);
         // (You can still store if needed, but it won't preserve after refresh)
         sessionStorage.setItem("userId", userId);
@@ -151,6 +162,8 @@
         const userInputEl = document.getElementById("userInput");
         const modelSelectEl = document.getElementById("modelSelect");
         const sendBtn = document.getElementById("sendBtn");
+        const userInputAreaEl = document.getElementById("userInputArea");
+
 
         //=====================
         // 事件監聽
@@ -177,7 +190,7 @@
         }) {
             const model = modelSelectEl.value;
 
-            const res = await fetch("http://localhost:3001/api/chat", {
+            const res = await fetch("http://140.115.126.37:3001/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -229,7 +242,7 @@
             removeStageElements();
 
             // 隱藏對話框的階段
-            const hideChatBoxStages = [
+            const hideUserInputElStages = [
                 "claim_stage",
                 "evidence_stage_ask_evidence",
                 "evidence_stage_ask_evidence_twice",
@@ -239,12 +252,12 @@
             ];
 
             // 控制對話框的顯示/隱藏
-            if (hideChatBoxStages.includes(state)) {
-                chatBox.style.display = "none";
+            if (hideUserInputElStages.includes(state)) {
+                userInputAreaEl.style.display = "none";
             } else {
-                chatBox.style.display = "block";
+                userInputAreaEl.style.display = "block";
             }
-            
+
             switch (state) {
                 case "claim_stage":
                     showClaimStageUI();
@@ -462,12 +475,14 @@
             scrollChatBoxToBottom();
         }
         function appendAiMessage(text, model) {
+            const htmlText = marked.parse(text); // 把 Markdown 轉成 HTML
             chatBox.innerHTML += `
-        <p class="ai-message"><strong>AI (${model}):</strong> ${text}</p>
-      `;
+        <div class="ai-message"><strong>AI (${model}):</strong><br>${htmlText}</div>
+    `;
             scrollChatBoxToBottom();
         }
         function scrollChatBoxToBottom() {
+            const chatBox = document.getElementById("chatBox");
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
