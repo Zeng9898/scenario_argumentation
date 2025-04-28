@@ -2,6 +2,9 @@ import express from "express";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
 import cors from "cors";
+import mongoose from "mongoose";
+import UserState from "./models/UserState.js";
+
 
 dotenv.config(); // 讀取 .env 檔案中的 API KEY
 
@@ -10,6 +13,14 @@ app.use(express.json());
 app.use(cors()); // 允許跨域請求
 
 const PORT = 3001;
+
+// 連線到 MongoDB Atlas
+const MONGO_URI = process.env.MONGO_URI; // 從 .env 讀取
+
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB connected."))
+  .catch(err => console.error("MongoDB connection error:", err));
+
 
 // ------------------- API URL & Model 設定 -------------------
 const ollamaApiUrl = "http://localhost:11434/api/generate";
@@ -582,36 +593,40 @@ const prompts = {
 };
 
 // ------------------- 初始學習狀態 -------------------
-function initUserIfNeeded(userId) {
-  if (!userState[userId]) {
-    // 若此使用者第一次進來，初始化
-    userState[userId] = {
+// 與原本的 userState = {}; 記憶體結構並存或取代都可以
+// 這裡範例是直接改用資料庫為主
+export async function initUserIfNeeded(userId) {
+  let userDoc = await UserState.findOne({ userId });
+  if (!userDoc) {
+    userDoc = new UserState({
+      userId,
       learningState: "claim_stage",
       conversationHistory: [
         {
           role: "assistant",
           content: `
             很好！既然大家已經理解了「主張」、「證據」和「推理」，我們來做一個有趣的情境任務！
-
-  寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，
-  他們說話時嘴巴前會呼出陣陣白煙。他們對這個現象有不同的看法：
-
-  小夫的主張：白煙是液態的小水滴。
-  胖虎的主張：白煙是固態的冰晶。
-  大雄的主張：白煙是氣態的水蒸氣。
-
-  我們來用 CER 論證的方法來分析，看看你們的觀察、證據和推理是什麼。
-  請思考一下，誰的主張是正確的？
+              寒流來了，氣溫降到攝氏 8 度。大雄、小夫和胖虎在聊天時發現，
+              他們說話時嘴巴前會呼出陣陣白煙。他們對這個現象有不同的看法：
+              
+              小夫的主張：白煙是液態的小水滴。
+              胖虎的主張：白煙是固態的冰晶。
+              大雄的主張：白煙是氣態的水蒸氣。
+              
+              我們來用 CER 論證的方法來分析，看看你們的觀察、證據和推理是什麼。
+              請思考一下，誰的主張是正確的？
           `
         }
       ],
       claim: "",
       evidence: "",
-      reasoning: "",
-      // ...可以再加更多欄位
-    };
+      reasoning: ""
+    });
+    await userDoc.save();
   }
+  return userDoc;
 }
+
 
 
 // ------------------- 核心 API -------------------
@@ -624,30 +639,39 @@ app.post("/api/chat", async (req, res) => {
    * - currentClaim/currentEvidence: 若使用者在前端填寫了某些主張或證據，可一併帶上
    */
   const { userId, message, model, currentClaim, currentEvidence, currentReasoning } = req.body;
-  console.log(message);
-  // 1. 初始化使用者（若尚未建立）
-  initUserIfNeeded(userId);
+  console.log("使用者訊息：", message);
 
-  // 2. 更新自訂欄位（若前端傳了新的值）
+  // (1) 取得或初始化 userDoc
+  let userDoc = await initUserIfNeeded(userId);
+
+  // (2) 更新欄位
   if (typeof currentClaim === "string" && currentClaim.trim() !== "") {
-    userState[userId].claim = currentClaim;
+    userDoc.claim = currentClaim;
   }
   if (typeof currentEvidence === "string" && currentEvidence.trim() !== "") {
-    userState[userId].evidence = currentEvidence;
+    userDoc.evidence = currentEvidence;
   }
   if (typeof currentReasoning === "string" && currentReasoning.trim() !== "") {
-    userState[userId].reasoning = currentReasoning;
+    userDoc.reasoning = currentReasoning;
   }
-  // 3. 取出此使用者的狀態資料
-  const state = userState[userId];
-  console.log('claim:', state.claim);
-  console.log('evidence:', state.evidence);
-  console.log('reasoning:', state.reasoning);
-  // 4. 將使用者訊息加入對話歷史
-  state.conversationHistory.push({ role: "user", content: message });
 
-  //const { message, model } = req.body;
+  // (3) 將使用者訊息加入對話歷史
+  userDoc.conversationHistory.push({ role: "user", content: message });
 
+  // (4) 取出學習狀態
+  const state = {
+    learningState: userDoc.learningState,
+    claim: userDoc.claim,
+    evidence: userDoc.evidence,
+    reasoning: userDoc.reasoning,
+    conversationHistory: userDoc.conversationHistory
+  };
+  console.log("claim:", state.claim);
+  console.log("evidence:", state.evidence);
+  console.log("reasoning:", state.reasoning);
+
+  // (5) 進行你的 if-else 邏輯 / generateResponse() ...
+  //     得到 finalResponse, 並更新 state.learningState 等等
   let finalResponse = "";
 
   try {
@@ -1002,6 +1026,24 @@ app.post("/api/chat", async (req, res) => {
 
     // 記錄 AI 回應到對話歷史
     state.conversationHistory.push({ role: "assistant", content: finalResponse });
+
+    // ▲ 在這裡把最新的資料回存至資料庫
+    // --------------------------------------------------------
+    await UserState.findOneAndUpdate(
+      { userId }, // 條件
+      {
+        $set: {
+          learningState: state.learningState,
+          claim: state.claim,
+          evidence: state.evidence,
+          reasoning: state.reasoning,
+          conversationHistory: state.conversationHistory
+        }
+      },
+      { new: true, upsert: true }
+    );
+    // --------------------------------------------------------
+
     console.log(state.conversationHistory);
     // 回傳給前端f
     res.json({

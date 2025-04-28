@@ -228,6 +228,23 @@
             // 先移除舊的階段 UI（如主張按鈕、證據區塊...）以避免累積
             removeStageElements();
 
+            // 隱藏對話框的階段
+            const hideChatBoxStages = [
+                "claim_stage",
+                "evidence_stage_ask_evidence",
+                "evidence_stage_ask_evidence_twice",
+                "reasoning_stage_ask_reasoning",
+                "reasoning_stage_ask_reasoning_twice",
+                "evidence_stage_revise_evidence"
+            ];
+
+            // 控制對話框的顯示/隱藏
+            if (hideChatBoxStages.includes(state)) {
+                chatBox.style.display = "none";
+            } else {
+                chatBox.style.display = "block";
+            }
+            
             switch (state) {
                 case "claim_stage":
                     showClaimStageUI();
